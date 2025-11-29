@@ -1,68 +1,67 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+i{"variant":"standard","id":"73552","title":"Correct cart.tsx for App Router"}
+"use client";
 
-export type CartItem = {
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+export interface CartItem {
   id: string;
   name: string;
   price: number;
+  image: string;
   quantity: number;
-};
-
-type CartContextValue = {
-  items: CartItem[];
-  add: (product: { id: string; name: string; price: number }, qty?: number) => void;
-  remove: (id: string) => void;
-  updateQty: (id: string, qty: number) => void;
-  clear: () => void;
-};
-
-const CartContext = createContext<CartContextValue | undefined>(undefined);
-
-export function useCart(): CartContextValue {
-  const ctx = useContext(CartContext);
-  if (!ctx) {
-    throw new Error('useCart must be used within CartProvider');
-  }
-  return ctx;
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }): JSX.Element {
-  const [items, setItems] = useState<CartItem[]>([]);
+interface CartContextType {
+  cart: CartItem[];
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
+}
 
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Load from localStorage on first mount
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('jb_cart');
-      if (raw) {
-        setItems(JSON.parse(raw) as CartItem[]);
-      }
-    } catch (e) {
-      // ignore
-    }
+    const saved = localStorage.getItem("cart");
+    if (saved) setCart(JSON.parse(saved));
   }, []);
 
+  // Save cart updates to localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem('jb_cart', JSON.stringify(items));
-    } catch (e) {
-      // ignore
-    }
-  }, [items]);
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
-  const add = (product: { id: string; name: string; price: number }, qty = 1) => {
-    setItems((cur) => {
-      const f = cur.find((c) => c.id === product.id);
-      if (f) {
-        return cur.map((c) => (c.id === product.id ? { ...c, quantity: c.quantity + qty } : c));
+  const addToCart = (item: CartItem) => {
+    setCart((prev) => {
+      const exists = prev.find((p) => p.id === item.id);
+      if (exists) {
+        return prev.map((p) =>
+          p.id === item.id ? { ...p, quantity: p.quantity + item.quantity } : p
+        );
       }
-      return [...cur, { id: product.id, name: product.name, price: product.price, quantity: qty }];
+      return [...prev, item];
     });
   };
 
-  const remove = (id: string) => setItems((cur) => cur.filter((i) => i.id !== id));
+  const removeFromCart = (id: string) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
 
-  const updateQty = (id: string, qty: number) =>
-    setItems((cur) => cur.map((i) => (i.id === id ? { ...i, quantity: Math.max(1, qty) } : i)));
+  const clearCart = () => setCart([]);
 
-  const clear = () => setItems([]);
+  return (
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
 
-  return <CartContext.Provider value={{ items, add, remove, updateQty, clear }}>{children}</CartContext.Provider>;
-}
+export const useCart = () => {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+};
+
