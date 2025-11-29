@@ -3,8 +3,9 @@ import React from 'react';
 import { useCart } from '../lib/cart';
 
 export default function Header(): JSX.Element {
-  const { items } = useCart();
-  const count = items.reduce((s, i) => s + i.quantity, 0);
+  const { cart } = useCart();
+  const count = cart.reduce((s, i) => s + i.quantity, 0);
+  
 
   return (
     <header className="border-b">
