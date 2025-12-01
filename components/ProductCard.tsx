@@ -1,41 +1,74 @@
-import React, { useState } from 'react';
-import QuickView from './QuickView';
-import { useCart } from '../lib/cart';
+"use client";
 
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  image: string;
-};
+import React, { useState } from "react";
+import { useCart } from "../context/CartContext";
 
-export default function ProductCard({ product }: { product: Product }): JSX.Element {
-  const { add } = useCart();
+export default function ProductCard({ product }) {
+  const { add, decrement, updateQuantity, isInCart, cart } = useCart();
   const [open, setOpen] = useState(false);
 
+  const item = cart.find((i) => i.id === product.id);
+  const inCart = isInCart(product.id);
+
+  function handleAdd() {
+    add({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      image: product.image,
+    });
+  }
+
+  function increase() {
+    updateQuantity(product.id, (item?.quantity || 0) + 1);
+  }
+
+  function decrease() {
+    decrement(product.id);
+  }
+
   return (
-    <article className="bg-white rounded-xl shadow p-4">
-      <div className="h-56 w-full relative rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-        <img src={product.image} alt={product.name} className="object-contain h-full" />
-      </div>
-      <h4 className="mt-3 font-semibold">{product.name}</h4>
-      <div className="text-sm text-gray-600 mt-1">{product.description}</div>
-      <div className="mt-3 flex items-center justify-between">
-        <div className="font-semibold">${product.price.toFixed(2)}</div>
-        <div className="flex gap-2">
+    <div className="border rounded-lg p-4">
+      <img
+        src={product.image}
+        className="w-full h-48 object-cover rounded"
+        alt={product.name}
+      />
+
+      <h2 className="font-semibold mt-2">{product.name}</h2>
+      <p className="text-gray-700">${product.price}</p>
+
+      {/* If NOT in cart: show Add to Bag */}
+      {!inCart && (
+        <button
+          className="mt-3 px-4 py-2 bg-black text-white rounded w-full"
+          onClick={handleAdd}
+        >
+          Add to Bag
+        </button>
+      )}
+
+      {/* If already in cart: show quantity controls */}
+      {inCart && (
+        <div className="mt-3 flex items-center justify-between bg-gray-100 rounded p-2">
           <button
-            onClick={() => add({ id: product.id, name: product.name, price: product.price }, 1)}
-            className="px-3 py-1 bg-green-600 text-white rounded"
+            onClick={decrease}
+            className="px-3 py-1 bg-gray-300 rounded text-lg"
           >
-            Add
+            –
           </button>
-          <button onClick={() => setOpen(true)} className="px-3 py-1 border rounded">
-            View
+
+          <span className="font-medium">{item?.quantity}</span>
+
+          <button
+            onClick={increase}
+            className="px-3 py-1 bg-gray-300 rounded text-lg"
+          >
+            +
           </button>
         </div>
-      </div>
-      {open && <QuickView product={product} onClose={() => setOpen(false)} />}
-    </article>
+      )}
+    </div>
   );
 }
